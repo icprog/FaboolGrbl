@@ -15,9 +15,17 @@ Setup the hardware timers for:
 #include "stm32f2xx_hal.h"
 #include "timers.h"
 #include "stepper.h"
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#include "i2c.h"
+#endif
 
 //-----------------------------------------------------------------------------
 uint32_t ui_cdc_timer_count;
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+uint32_t ui_water_flow_threshold;
+uint32_t ui_water_flow_count;
+uint32_t ui_water_flow_save;
+#endif
 //-----------------------------------------------------------------------------
 
 // enable the peripheral clock for the timers
@@ -29,6 +37,8 @@ static void enable_tim_clock(TIM_TypeDef *tim)
         RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
     } else if (tim == TIM4) {
         RCC->APB1ENR |= RCC_APB1ENR_TIM4EN;
+    } else if (tim == TIM5) {
+        RCC->APB1ENR |= RCC_APB1ENR_TIM5EN;
     }
 }
 
@@ -44,6 +54,8 @@ static void enable_tim_interrupt(TIM_TypeDef *tim, uint32_t pre, uint32_t sub)
         irq = TIM3_IRQn;
     } else if (tim == TIM4) {
         irq = TIM4_IRQn;
+    } else if (tim == TIM5) {
+        irq = TIM5_IRQn;
     } else {
         return;
     }
@@ -224,22 +236,31 @@ void control_laser_intensity(uint8_t intensity) {
 
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+    SetAnalog((uint8_t)LASER_TIMER_PERIOD);
+    TIMx->CCR3 = (uint8_t)LASER_TIMER_PERIOD;
+#else
     TIMx->CCR3 = intensity;
+#endif
 }
 void control_laser_pwm(uint8_t intensity) {
 
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
-	if (intensity > 40) {
-		// set PWM freq to 3.9kHz
-	    TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ3 * LASER_TIMER_PERIOD)) - 1;
-	} else if (intensity > 10) {
-		// set PWM freq to 489Hz
-	    TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ2 * LASER_TIMER_PERIOD)) - 1;
-	} else {
-		// set PWM freq to 122Hz
-	    TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ1 * LASER_TIMER_PERIOD)) - 1;
-	}
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+    TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ3 * LASER_TIMER_PERIOD)) - 1;
+#else
+    if (intensity > 40) {
+        // set PWM freq to 3.9kHz
+        TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ3 * LASER_TIMER_PERIOD)) - 1;
+    } else if (intensity > 10) {
+        // set PWM freq to 489Hz
+        TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ2 * LASER_TIMER_PERIOD)) - 1;
+    } else {
+        // set PWM freq to 122Hz
+        TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ1 * LASER_TIMER_PERIOD)) - 1;
+    }
+#endif
 }
 
 //-----------------------------------------------------------------------------
@@ -253,7 +274,7 @@ static void cdc_timer_init(void)
 {
     TIM_TypeDef* const TIMx = CDC_TIMER;
 
-	ui_cdc_timer_count = 0;
+    ui_cdc_timer_count = 0;
 
     // enable the peripheral clock
     enable_tim_clock(TIMx);
@@ -295,7 +316,7 @@ void cdc_timer_start(void)
 {
     TIM_TypeDef* const TIMx = CDC_TIMER;
 
-	ui_cdc_timer_count = 0;
+    ui_cdc_timer_count = 0;
 
     // enable update interrupts
     TIMx->DIER |= TIM_DIER_UIE;
@@ -322,10 +343,103 @@ void TIM4_IRQHandler(void)
     }
 }
 //-----------------------------------------------------------------------------
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+
+#define WATER_FLOW_TIMER TIM5
+#define WATER_FLOW_TIMER_PERIOD 60000
+
+static void water_flow_timer_init(void)
+{
+
+    TIM_TypeDef* const TIMx = WATER_FLOW_TIMER;
+
+    // enable the peripheral clock
+    enable_tim_clock(TIMx);
+
+    // up counter, edge aligned mode, arr is not buffered
+    TIMx->CR1 = 0;
+    TIMx->CR2 = 0;
+    // slave mode control register (not used)
+    TIMx->SMCR = 0;
+    // disable and clear interrupts (for now)
+    TIMx->DIER = 0;
+    TIMx->SR = 0;
+    // setup the output control mode (no output, no CCR preload)
+    TIMx->CCMR1 = 0;
+    TIMx->CCMR2 = 0;
+    // disable output
+    TIMx->CCER = 0;
+    // setup the counter, reload value and prescalar
+    TIMx->CNT = 0;
+    TIMx->PSC = ((SystemCoreClock / 2) / WATER_FLOW_TIMER_PERIOD * 2) - 1;
+    TIMx->ARR = WATER_FLOW_TIMER_PERIOD - 1;
+    // setup the output compare values (0 for now)
+    TIMx->CCR1 = 0;
+    TIMx->CCR2 = 0;
+    TIMx->CCR3 = 0;
+    TIMx->CCR4 = 0;
+    // dma is not used
+    TIMx->DCR = 0;
+    TIMx->DMAR = 0;
+
+    // Enable the interrupt - run this at high priority.
+    // we don't want other interrupts altering the step timing.
+    enable_tim_interrupt(TIMx, 15, 0);
+
+    ui_water_flow_count = 0;
+    ui_water_flow_save = 0;
+    set_water_flow_thre(200);
+
+    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 14, 0);
+    HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+    // enable update interrupts
+    TIMx->DIER |= TIM_DIER_UIE;
+    // turn on the timer
+    TIMx->CR1 |= TIM_CR1_CEN;
+}
+
+void TIM5_IRQHandler(void)
+{
+    TIM_TypeDef* const TIMx = WATER_FLOW_TIMER;
+
+    if ((TIMx->SR & TIM_SR_UIF) && (TIMx->DIER & TIM_DIER_UIE)) {
+        TIMx->SR &= ~TIM_SR_UIF;
+
+        ui_water_flow_save = ui_water_flow_count;
+        ui_water_flow_count = 0;
+        //trace_printf ("%d\n", ui_water_flow_save);
+    }
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);
+    ui_water_flow_count++;
+}
+
+uint8_t judg_water_flow(void)
+{
+    if (ui_water_flow_threshold > ui_water_flow_save) {
+        return 1;
+    }
+
+    return 0;
+}
+
+void set_water_flow_thre(uint32_t ui_threshold)
+{
+    ui_water_flow_threshold = ui_threshold;
+}
+#endif
+//-----------------------------------------------------------------------------
 void timers_init(void)
 {
     step_timer_init();
     laser_timer_init();
     cdc_timer_init();
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+    water_flow_timer_init();
+#endif
 }
 //-----------------------------------------------------------------------------

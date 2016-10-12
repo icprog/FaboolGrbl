@@ -32,6 +32,7 @@
 #include "gpio.h"
 #include "timers.h"
 #include "i2c.h"
+#include "adc.h"
 
 // D:Raster Start
 //#define MM_PER_INCH (25.4)
@@ -58,6 +59,10 @@
 #define NEXT_ACTION_LIMIT_Y_ON  19
 #define NEXT_ACTION_LIMIT_Y_OFF 20
 #define NEXT_ACTION_SET_DRV_CURR 21
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#define NEXT_ACTION_LASER_VALU 22
+#define NEXT_ACTION_SET_WATER_FLOW_THRE 23
+#endif
 
 
 #define OFFSET_G54 0
@@ -85,11 +90,11 @@ typedef struct {
   uint8_t offselect;               // currently active offset, 0 -> G54, 1 -> G55
 // C:Raster Start
 //  uint8_t nominal_laser_intensity; // 0-255 percentage
-  uint8_t laser_pwm;				// 0-255 percentage
+  uint8_t laser_pwm;                // 0-255 percentage
 // C:Raster End
 // I:Raster Start
-	uint16_t laser_ppi;					// Laser PPI (Pulses Per Inch)
-	raster_t raster;					// Raster State
+    uint16_t laser_ppi;                 // Laser PPI (Pulses Per Inch)
+    raster_t raster;                    // Raster State
 // I:Raster End
 } parser_state_t;
 static parser_state_t gc;
@@ -132,14 +137,14 @@ void gcode_init() {
 
 // I:Raster Start
 static void check_ppi_feedrate(void) {
-	  // Check that the configured PPI and Feedrate are compatible
-	  // Prefer PPI (and slow down) if not.
-	  uint32_t pulses_per_min = gc.laser_ppi * gc.feed_rate / MM_PER_INCH;
+      // Check that the configured PPI and Feedrate are compatible
+      // Prefer PPI (and slow down) if not.
+      uint32_t pulses_per_min = gc.laser_ppi * gc.feed_rate / MM_PER_INCH;
 
-	  // Set the Feedrate to the maximum it can be for this PPI.
-	  if (pulses_per_min > CONFIG_LASER_PPI_MAX_PPM) {
-		  gc.feed_rate = CONFIG_LASER_PPI_MAX_PPM * MM_PER_INCH / gc.laser_ppi;
-	  }
+      // Set the Feedrate to the maximum it can be for this PPI.
+      if (pulses_per_min > CONFIG_LASER_PPI_MAX_PPM) {
+          gc.feed_rate = CONFIG_LASER_PPI_MAX_PPM * MM_PER_INCH / gc.laser_ppi;
+      }
 }
 // I:Raster End
 
@@ -165,7 +170,7 @@ void gcode_process_line() {
         // add to line, as char which is signed
         rx_line[numChars++] = (char)chr;
       }
-	}
+    }
   }
 
 }
@@ -291,7 +296,7 @@ void gcode_status_line() {
       if (limit_input() & (1<<X1_LIMIT_BIT)) {
         printString("L1");  // Limit X1 Hit
       }
-      #if GRBL_MODEL == FABOOL_LASER_CO2
+      #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
       if (limit_input() & (1<<X2_LIMIT_BIT)) {
         printString("L2");  // Limit X2 Hit
       }
@@ -299,12 +304,24 @@ void gcode_status_line() {
       if (limit_input() & (1<<Y1_LIMIT_BIT)) {
         printString("L3");  // Limit Y1 Hit
       }
-      #if GRBL_MODEL == FABOOL_LASER_CO2
+      #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
       if (limit_input() & (1<<Y2_LIMIT_BIT)) {
         printString("L4");  // Limit Y21 Hit
       }
       #endif
     }
+
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+    // Water Flow
+    if (judg_water_flow()) {
+        printString("F");
+    }
+    // power
+    if (judg_power()) {
+        printString("P"); // Power Off
+    } 
+#endif
+
    //
   if (print_extended_status) {
     // position
@@ -343,6 +360,10 @@ uint8_t gcode_execute_line(char *line) {
   gc.status_code = STATUS_OK;
   float fDrvCurr[3];
   memset(&fDrvCurr, 0, sizeof(fDrvCurr));
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+  uint8_t uiLaserPower = 0;
+  uint32_t uiWaterFlowThre = 0;
+#endif
 
   //// Pass 1: Commands
   while(next_statement(&letter, &value, line, &char_counter)) {
@@ -355,33 +376,33 @@ uint8_t gcode_execute_line(char *line) {
           case 4: next_action = NEXT_ACTION_DWELL; break;
 // I:Raster Start
           case 8:
-			// Special case to append raster data
-			if (line[char_counter] == 'D') {
-				uint32_t len;
-				char_counter++;
+            // Special case to append raster data
+            if (line[char_counter] == 'D') {
+                uint32_t len;
+                char_counter++;
 
-				len = strlen(line) - char_counter;
+                len = strlen(line) - char_counter;
 
-				if (gc.raster.length + len >= RASTER_BIT_NUM || len > 70)
-				{
-					gc.status_code = STATUS_RX_BUFFER_OVERFLOW;
-					stepper_request_stop(gc.status_code);
-				}
+                if (gc.raster.length + len >= RASTER_BIT_NUM || len > 70)
+                {
+                    gc.status_code = STATUS_RX_BUFFER_OVERFLOW;
+                    stepper_request_stop(gc.status_code);
+                }
 
-				for (uint16_t i = 0; i < len; i++) {
-					uint8_t iPos = (gc.raster.length + i) / 8;
-					uint8_t iSifft = (gc.raster.length + i) % 8;
+                for (uint16_t i = 0; i < len; i++) {
+                    uint8_t iPos = (gc.raster.length + i) / 8;
+                    uint8_t iSifft = (gc.raster.length + i) % 8;
 
-					if (line[char_counter + i] == '1') {
-						gc.raster.buffer[iPos] = gc.raster.buffer[iPos] | (1 << iSifft);
-					}
-				}
-				gc.raster.length += len;
-				return gc.status_code;
-			} else {
-				next_action = NEXT_ACTION_RASTER;
-			}
-			break;
+                    if (line[char_counter + i] == '1') {
+                        gc.raster.buffer[iPos] = gc.raster.buffer[iPos] | (1 << iSifft);
+                    }
+                }
+                gc.raster.length += len;
+                return gc.status_code;
+            } else {
+                next_action = NEXT_ACTION_RASTER;
+            }
+            break;
 // I:Raster End
           case 10: next_action = NEXT_ACTION_SET_COORDINATE_OFFSET; break;
           case 20: gc.inches_mode = true; break;
@@ -399,12 +420,12 @@ uint8_t gcode_execute_line(char *line) {
 // I:Raster Start
           case 3:
           case 4:
-				next_action = NEXT_ACTION_SET_PPI;
-				gc.laser_ppi = 0;
-				break;
+                next_action = NEXT_ACTION_SET_PPI;
+                gc.laser_ppi = 0;
+                break;
           case 5:
-				gc.laser_ppi = 0;
-				break;
+                gc.laser_ppi = 0;
+                break;
 // I:Raster End
           case 80: next_action = NEXT_ACTION_AIR_ASSIST_ENABLE;break;
           case 81: next_action = NEXT_ACTION_AIR_ASSIST_DISABLE;break;
@@ -417,6 +438,16 @@ uint8_t gcode_execute_line(char *line) {
           case 94: next_action = NEXT_ACTION_LIMIT_Y_ON;break;
           case 95: next_action = NEXT_ACTION_LIMIT_Y_OFF;break;
           case 96: next_action = NEXT_ACTION_SET_DRV_CURR;break;
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+          case 97:
+                next_action = NEXT_ACTION_LASER_VALU;
+                uiLaserPower = 0;
+                break;
+          case 98:
+                next_action = NEXT_ACTION_SET_WATER_FLOW_THRE;
+                uiWaterFlowThre = 0;
+                break;
+#endif
 
           default: FAIL(STATUS_UNSUPPORTED_STATEMENT);
         }
@@ -451,27 +482,27 @@ uint8_t gcode_execute_line(char *line) {
         }
         break;
       case 'X': case 'Y': case 'Z':
-		if (next_action == NEXT_ACTION_SET_DRV_CURR) {
-			fDrvCurr[letter - 'X'] = value;
-		}
-		else {
+        if (next_action == NEXT_ACTION_SET_DRV_CURR) {
+            fDrvCurr[letter - 'X'] = value;
+        }
+        else {
 // C:Raster Start
 //            if (gc.absolute_mode) {
 //              target[letter - 'X'] = unit_converted_value;
 //            } else {
 //              target[letter - 'X'] += unit_converted_value;
 //            }
-			if (next_action != NEXT_ACTION_RASTER) {
-		        if (gc.absolute_mode) {
-		          target[letter - 'X'] = unit_converted_value;
-		        } else {
-		          target[letter - 'X'] += unit_converted_value;
-		        }
-			}
-			vector[letter - 'X'] = unit_converted_value;
+            if (next_action != NEXT_ACTION_RASTER) {
+                if (gc.absolute_mode) {
+                  target[letter - 'X'] = unit_converted_value;
+                } else {
+                  target[letter - 'X'] += unit_converted_value;
+                }
+            }
+            vector[letter - 'X'] = unit_converted_value;
 // C:Raster End
-	        got_actual_line_command = true;
-		}
+            got_actual_line_command = true;
+        }
         break;
       case 'P':  // dwelling seconds or CS selector
         if (next_action == NEXT_ACTION_SET_COORDINATE_OFFSET) {
@@ -483,16 +514,21 @@ uint8_t gcode_execute_line(char *line) {
       case 'S':
 // C:Raster Start
 //        gc.nominal_laser_intensity = value;
-		if (next_action == NEXT_ACTION_SET_PPI) {
-			gc.laser_ppi = value;
-			check_ppi_feedrate();
-		}
-		else {
+        if (next_action == NEXT_ACTION_SET_PPI) {
+            gc.laser_ppi = value;
+            check_ppi_feedrate();
+        }
+        else {
 // C:Raster Start
-//	        gc.nominal_laser_intensity = value;
-	        gc.laser_pwm = value;
+//          gc.nominal_laser_intensity = value;
+            gc.laser_pwm = value;
 // C:Raster End
-		}
+        }
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+        if (next_action == NEXT_ACTION_LASER_VALU) {
+            uiLaserPower = value;
+        }
+#endif
 // C:Raster End
         break;
       case 'L':  // G10 qualifier
@@ -506,6 +542,13 @@ uint8_t gcode_execute_line(char *line) {
         r = value;
         break;
 // I:Raster End
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+      case 'W':
+        if (next_action == NEXT_ACTION_SET_WATER_FLOW_THRE) {
+            uiWaterFlowThre = value;
+        }
+        break;
+#endif
     }
   }
 
@@ -537,56 +580,56 @@ uint8_t gcode_execute_line(char *line) {
       }
       break;
 // I:Raster Start
-	case NEXT_ACTION_RASTER:
-		if (got_actual_line_command) {
-			gc.raster.x_off = vector[X_AXIS];
-			gc.raster.y_off = vector[Y_AXIS];
-			if (vector[Z_AXIS] < 0) {
-				gc.raster.invert = 1;
-			} else {
-				gc.raster.invert = 0;
-			}
-		}
-		if (p > 0.0) {
-			gc.raster.dot_size = p;
-		}
-		if (r >= 0) {
-			gc.raster.reverse = r;
-		}
-		if (n >= 0.0) {
-			// Here we go...
-			if (gc.raster.length > 0) {
-				planner_raster(target[X_AXIS] + gc.offsets[3 * gc.offselect + X_AXIS],
-						target[Y_AXIS] + gc.offsets[3 * gc.offselect + Y_AXIS],
-						target[Z_AXIS] + gc.offsets[3 * gc.offselect + Z_AXIS],
-						gc.feed_rate, gc.laser_pwm, &gc.raster);
+    case NEXT_ACTION_RASTER:
+        if (got_actual_line_command) {
+            gc.raster.x_off = vector[X_AXIS];
+            gc.raster.y_off = vector[Y_AXIS];
+            if (vector[Z_AXIS] < 0) {
+                gc.raster.invert = 1;
+            } else {
+                gc.raster.invert = 0;
+            }
+        }
+        if (p > 0.0) {
+            gc.raster.dot_size = p;
+        }
+        if (r >= 0) {
+            gc.raster.reverse = r;
+        }
+        if (n >= 0.0) {
+            // Here we go...
+            if (gc.raster.length > 0) {
+                planner_raster(target[X_AXIS] + gc.offsets[3 * gc.offselect + X_AXIS],
+                        target[Y_AXIS] + gc.offsets[3 * gc.offselect + Y_AXIS],
+                        target[Z_AXIS] + gc.offsets[3 * gc.offselect + Z_AXIS],
+                        gc.feed_rate, gc.laser_pwm, &gc.raster);
 
-//				for (uint16_t i = 0; i < gc.raster.length; i++) {
-//					uint8_t iPos = i / 8;
-//					uint8_t iSifft = i % 8;
+//              for (uint16_t i = 0; i < gc.raster.length; i++) {
+//                  uint8_t iPos = i / 8;
+//                  uint8_t iSifft = i % 8;
 //
-//					if (gc.raster.buffer[iPos] & (1 << iSifft)) {
-//						printPgmString(PSTR("1"));
-//					}
-//					else {
-//						printPgmString(PSTR("0"));
-//					}
-//				}
-//				printPgmString(PSTR("\n"));
+//                  if (gc.raster.buffer[iPos] & (1 << iSifft)) {
+//                      printPgmString(PSTR("1"));
+//                  }
+//                  else {
+//                      printPgmString(PSTR("0"));
+//                  }
+//              }
+//              printPgmString(PSTR("\n"));
 
-				if (gc.raster.x_off != 0.0) {
-					target[Y_AXIS] += gc.raster.dot_size;
-				}
-				else if (gc.raster.y_off != 0.0) {
-					target[X_AXIS] -= gc.raster.dot_size;
-				}
-			}
+                if (gc.raster.x_off != 0.0) {
+                    target[Y_AXIS] += gc.raster.dot_size;
+                }
+                else if (gc.raster.y_off != 0.0) {
+                    target[X_AXIS] -= gc.raster.dot_size;
+                }
+            }
 
-			// Reset the buffer.
-			gc.raster.length = 0;
-			clear_vector(gc.raster.buffer);
-		}
-		break;
+            // Reset the buffer.
+            gc.raster.length = 0;
+            clear_vector(gc.raster.buffer);
+        }
+        break;
 // I:Raster End
 
     case NEXT_ACTION_DWELL:
@@ -688,6 +731,15 @@ uint8_t gcode_execute_line(char *line) {
     case NEXT_ACTION_SET_DRV_CURR:
       driver_current_enable(fDrvCurr[X_AXIS], fDrvCurr[Y_AXIS]);
       break;
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+    case NEXT_ACTION_LASER_VALU:
+      control_laser_intensity(uiLaserPower);
+      control_laser_pwm(uiLaserPower);
+      break;
+    case NEXT_ACTION_SET_WATER_FLOW_THRE:
+      set_water_flow_thre(uiWaterFlowThre);
+      break;
+#endif
   }
 
   // As far as the parser is concerned, the position is now == target. In reality the

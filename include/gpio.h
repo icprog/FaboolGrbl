@@ -37,10 +37,19 @@
 
 #define LIMIT_X1         GPIO_NUM(PORTA, 1)
 #define LIMIT_Y1         GPIO_NUM(PORTA, 4)
+
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#define LIMIT_X2         GPIO_NUM(PORTA, 2)
+#define LIMIT_Y2         GPIO_NUM(PORTA, 5)
+#endif
+
 #define LIMIT_D         GPIO_NUM(PORTA, 6)
 
 #define LASER_OUT       GPIO_NUM(PORTC, 8)
 
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#define WATER_FLOW      GPIO_NUM(PORTB, 12)
+#endif
 //-----------------------------------------------------------------------------
 void gpio_init(void);
 //-----------------------------------------------------------------------------
@@ -76,17 +85,33 @@ static inline void stepper_motor_disable(void)
 
 #define X1_LIMIT_BIT 1
 #define Y1_LIMIT_BIT 0
+#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+    #define X2_LIMIT_BIT 3
+    #define Y2_LIMIT_BIT 2
+#endif
 
-#define LIMIT_MASK ((1 << X1_LIMIT_BIT) | (1 << Y1_LIMIT_BIT))
+#if GRBL_MODEL == SMART_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MINI
+    #define LIMIT_MASK ((1 << X1_LIMIT_BIT) | (1 << Y1_LIMIT_BIT))
+#else
+    #define LIMIT_MASK ((1 << X1_LIMIT_BIT) | (1 << Y1_LIMIT_BIT) | (1 << X2_LIMIT_BIT) | (1 << Y2_LIMIT_BIT))
+#endif
+
 static inline uint16_t limit_input(void)
 {
+#if GRBL_MODEL == SMART_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MINI
     return (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_X1), GPIO_BIT(LIMIT_X1)) == GPIO_PIN_RESET) << X1_LIMIT_BIT |
-    		(HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_Y1), GPIO_BIT(LIMIT_Y1)) == GPIO_PIN_RESET) << Y1_LIMIT_BIT;
+            (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_Y1), GPIO_BIT(LIMIT_Y1)) == GPIO_PIN_RESET) << Y1_LIMIT_BIT;
+#else
+    return (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_X1), GPIO_BIT(LIMIT_X1)) == GPIO_PIN_RESET) << X1_LIMIT_BIT |
+           (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_Y1), GPIO_BIT(LIMIT_Y1)) == GPIO_PIN_RESET) << Y1_LIMIT_BIT |
+           (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_X2), GPIO_BIT(LIMIT_X2)) == GPIO_PIN_RESET) << X2_LIMIT_BIT |
+           (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_Y2), GPIO_BIT(LIMIT_Y2)) == GPIO_PIN_RESET) << Y2_LIMIT_BIT;
+#endif
 }
 //-----------------------------------------------------------------------------
 static inline uint16_t door_input(void)
 {
-	return (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_D), GPIO_BIT(LIMIT_D)) == GPIO_PIN_RESET);
+    return (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_D), GPIO_BIT(LIMIT_D)) == GPIO_PIN_RESET);
 }
 
 //-----------------------------------------------------------------------------

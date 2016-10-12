@@ -24,46 +24,53 @@
 #include <stdbool.h>
 
 
-#define SMART_LASER_MINI	0
-#define FABOOL_LASER_MINI	1
-#define FABOOL_LASER_CO2	2
+#define SMART_LASER_MINI    0
+#define FABOOL_LASER_MINI   1
+#define SMART_LASER_CO2     2
+#define FABOOL_LASER_CO2    3
 
-//#define GRBL_MODEL	SMART_LASER_MINI
-#define GRBL_MODEL	FABOOL_LASER_MINI
-//#define GRBL_MODEL	FABOOL_LASER_CO2
+//#define GRBL_MODEL    SMART_LASER_MINI
+//#define GRBL_MODEL  FABOOL_LASER_MINI
+//#define GRBL_MODEL    SMART_LASER_CO2
+#define GRBL_MODEL    FABOOL_LASER_CO2
 
 
 #if GRBL_MODEL == SMART_LASER_MINI
-	#define GRBL_STR   " SmartLaserMini"
+    #define GRBL_STR   " SmartLaserMini"
 #elif GRBL_MODEL == FABOOL_LASER_MINI
-	#define GRBL_STR   " FaboolLaserMini"
+    #define GRBL_STR   " FaboolLaserMini"
+#elif GRBL_MODEL == SMART_LASER_CO2
+    #define GRBL_STR   " SmartLaserCo2"
 #elif GRBL_MODEL == FABOOL_LASER_CO2
-	#define GRBL_STR   " FaboolLaserCo2"
+    #define GRBL_STR   " FaboolLaserCo2"
 #endif
 
 
 // Version number
-#define GRBL_VERSION "1.00"
+#define GRBL_VERSION "2.00"
 
 
 // I:Raster Start
 // This defines the maximum number of dots in a raster.
-#define RASTER_BUFFER_SIZE	128
-#define RASTER_BIT_NUM		(RASTER_BUFFER_SIZE * 8)
+#define RASTER_BUFFER_SIZE  128
+#define RASTER_BIT_NUM      (RASTER_BUFFER_SIZE * 8)
 // I:Raster End
 
 #define CMD_FEED_HOLD '!'
 #define CMD_CYCLE_START '~'
 
 #if GRBL_MODEL == SMART_LASER_MINI
-	#define CONFIG_X_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
-	#define CONFIG_Y_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_X_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_Y_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #elif GRBL_MODEL == FABOOL_LASER_MINI
-	#define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
-	#define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+#elif GRBL_MODEL == SMART_LASER_CO2
+    #define CONFIG_X_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_Y_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #elif GRBL_MODEL == FABOOL_LASER_CO2
-	#define CONFIG_X_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
-	#define CONFIG_Y_STEPS_PER_MM 79.99999999 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #endif
 #define CONFIG_Z_STEPS_PER_MM 44.44444444 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #define CONFIG_PULSE_MICROSECONDS 5
@@ -79,11 +86,11 @@
 #define CONFIG_INVERT_Z_AXIS 1  // 0 is regular, 1 inverts the y direction
 
 // I:Raster Start
-#define CONFIG_LASER_PWM_FREQ			40000
+#define CONFIG_LASER_PWM_FREQ           40000
 
-#define CONFIG_LASER_PPI_PULSE_MS		4
-#define CONFIG_LASER_PPI_SPACE_MS		1
-#define CONFIG_LASER_PPI_MAX_PPM		(60000.0 / (CONFIG_LASER_PPI_PULSE_MS + CONFIG_LASER_PPI_SPACE_MS))
+#define CONFIG_LASER_PPI_PULSE_MS       4
+#define CONFIG_LASER_PPI_SPACE_MS       1
+#define CONFIG_LASER_PPI_MAX_PPM        (60000.0 / (CONFIG_LASER_PPI_PULSE_MS + CONFIG_LASER_PPI_SPACE_MS))
 // I:Raster End
 
 
