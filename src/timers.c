@@ -237,8 +237,13 @@ void control_laser_intensity(uint8_t intensity) {
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
 #if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
-    SetAnalog(intensity);
-    TIMx->CCR3 = intensity;
+    if (intensity == 0) {
+        TIMx->CCR3 = (uint8_t)0;
+    }
+    else {
+        SetAnalog(intensity);
+        TIMx->CCR3 = (uint8_t)LASER_TIMER_PERIOD;
+    }
 #else
     TIMx->CCR3 = intensity;
 #endif

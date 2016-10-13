@@ -17,6 +17,7 @@
 I2C_HandleTypeDef hi2c1;
 #if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 I2C_HandleTypeDef hi2c3;
+uint8_t save_intensity;
 #endif
 //-----------------------------------------------------------------------------
 void i2c_init(void)
@@ -34,7 +35,7 @@ void i2c_init(void)
 
 #if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
     hi2c3.Instance = I2C3;
-    hi2c3.Init.ClockSpeed = 100000;
+    hi2c3.Init.ClockSpeed = 400000;
     hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
     hi2c3.Init.OwnAddress1 = 0;
     hi2c3.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -43,6 +44,9 @@ void i2c_init(void)
     hi2c3.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
     hi2c3.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
     HAL_I2C_Init(&hi2c3);
+
+    save_intensity = 1;
+    SetAnalog(0);
 #endif
 }
 //-----------------------------------------------------------------------------
@@ -98,9 +102,15 @@ void driver_current_disable(void)
 #if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 uint8_t SetAnalog(uint8_t intensity)
 {
-    uint16_t iOutBit = (uint16_t)(4095.0 / LASER_TIMER_PERIOD * intensity);
+    uint16_t iOutBit;
     uint8_t data[4];
 
+    if (save_intensity == intensity) {
+        return true;
+    }
+    save_intensity = intensity;
+
+    iOutBit = (uint16_t)(4095.0 / LASER_TIMER_PERIOD * intensity);
     data[0] = 0x40;
     data[1] = (uint8_t)(iOutBit / 16);
     data[2] = (uint8_t)((iOutBit % 16) << 4);
