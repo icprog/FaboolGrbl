@@ -237,8 +237,8 @@ void control_laser_intensity(uint8_t intensity) {
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
 #if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
-    SetAnalog((uint8_t)LASER_TIMER_PERIOD);
-    TIMx->CCR3 = (uint8_t)LASER_TIMER_PERIOD;
+    SetAnalog(intensity);
+    TIMx->CCR3 = intensity;
 #else
     TIMx->CCR3 = intensity;
 #endif
@@ -384,13 +384,13 @@ static void water_flow_timer_init(void)
 
     // Enable the interrupt - run this at high priority.
     // we don't want other interrupts altering the step timing.
-    enable_tim_interrupt(TIMx, 15, 0);
+    enable_tim_interrupt(TIMx, 13, 0);
 
     ui_water_flow_count = 0;
     ui_water_flow_save = 0;
-    set_water_flow_thre(200);
+    set_water_flow_thre(30);
 
-    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 14, 0);
+    HAL_NVIC_SetPriority(EXTI15_10_IRQn, 10, 0);
     HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
     // enable update interrupts
@@ -408,7 +408,6 @@ void TIM5_IRQHandler(void)
 
         ui_water_flow_save = ui_water_flow_count;
         ui_water_flow_count = 0;
-        //trace_printf ("%d\n", ui_water_flow_save);
     }
 }
 
@@ -420,6 +419,7 @@ void EXTI15_10_IRQHandler(void)
 
 uint8_t judg_water_flow(void)
 {
+    //trace_printf ("%d\n", ui_water_flow_save);
     if (ui_water_flow_threshold > ui_water_flow_save) {
         return 1;
     }

@@ -98,7 +98,7 @@ void driver_current_disable(void)
 #if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 uint8_t SetAnalog(uint8_t intensity)
 {
-    uint16_t iOutBit = (uint16_t)(4096.0 / LASER_TIMER_PERIOD * intensity);
+    uint16_t iOutBit = (uint16_t)(4095.0 / LASER_TIMER_PERIOD * intensity);
     uint8_t data[4];
 
     data[0] = 0x40;

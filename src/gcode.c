@@ -314,7 +314,7 @@ void gcode_status_line() {
 #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
     // Water Flow
     if (judg_water_flow()) {
-        printString("F");
+        printString("C");
     }
     // power
     if (judg_power()) {
