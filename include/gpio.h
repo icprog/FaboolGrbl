@@ -2,6 +2,7 @@
 #ifndef GPIO_H
 #define GPIO_H
 //-----------------------------------------------------------------------------
+#include "config.h"
 #include "stm32f2xx_hal.h"
 #include <stdbool.h>
 
@@ -38,7 +39,7 @@
 #define LIMIT_X1         GPIO_NUM(PORTA, 1)
 #define LIMIT_Y1         GPIO_NUM(PORTA, 4)
 
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 #define LIMIT_X2         GPIO_NUM(PORTA, 2)
 #define LIMIT_Y2         GPIO_NUM(PORTA, 5)
 #endif
@@ -47,7 +48,7 @@
 
 #define LASER_OUT       GPIO_NUM(PORTC, 8)
 
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 #define WATER_FLOW      GPIO_NUM(PORTB, 12)
 #endif
 //-----------------------------------------------------------------------------
@@ -85,7 +86,7 @@ static inline void stepper_motor_disable(void)
 
 #define X1_LIMIT_BIT 1
 #define Y1_LIMIT_BIT 0
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
     #define X2_LIMIT_BIT 3
     #define Y2_LIMIT_BIT 2
 #endif

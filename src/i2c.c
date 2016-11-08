@@ -1,7 +1,7 @@
 //-----------------------------------------------------------------------------
 #include "i2c.h"
 #include "config.h"
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 #include "timers.h"
 #endif
 //-----------------------------------------------------------------------------
@@ -15,7 +15,7 @@
 #define MAX_STEPPER_DIGIPOT_VOLTAGE (3.3 * 2.5 / (2.7 + 2.5))
 //-----------------------------------------------------------------------------
 I2C_HandleTypeDef hi2c1;
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 I2C_HandleTypeDef hi2c3;
 uint8_t save_intensity;
 #endif
@@ -33,7 +33,7 @@ void i2c_init(void)
     hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLED;
     HAL_I2C_Init(&hi2c1);
 
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
     hi2c3.Instance = I2C3;
     hi2c3.Init.ClockSpeed = 400000;
     hi2c3.Init.DutyCycle = I2C_DUTYCYCLE_2;
@@ -99,7 +99,7 @@ void driver_current_disable(void)
     SetCurrent(1, 0);
 }
 //-----------------------------------------------------------------------------
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 uint8_t SetAnalog(uint8_t intensity)
 {
     uint16_t iOutBit;

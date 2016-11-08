@@ -33,6 +33,7 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f2xx_hal.h"
+#include "config.h"
 
 /* USER CODE BEGIN 0 */
 
@@ -86,7 +87,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
 
   /* USER CODE END I2C1_MspInit 1 */
   }
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
   if(hi2c->Instance==I2C3)
   {
   /* USER CODE BEGIN I2C3_MspInit 0 */
@@ -141,7 +142,7 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6|GPIO_PIN_7);
 
   }
-#if SMART_LASER_CO2 == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
   if(hi2c->Instance==I2C3)
   {
   /* USER CODE BEGIN I2C3_MspDeInit 0 */
