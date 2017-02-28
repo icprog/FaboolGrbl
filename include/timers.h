@@ -46,9 +46,11 @@ void cdc_timer_isr(void);
 void cdc_timer_start(void);
 void cdc_timer_stop(void);
 
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 // Water Flow
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
 uint8_t judg_water_flow(void);
+#endif
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 void set_water_flow_thre(uint32_t ui_threshold);
 #endif
 //-----------------------------------------------------------------------------

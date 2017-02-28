@@ -59,8 +59,10 @@
 #define NEXT_ACTION_LIMIT_Y_ON  19
 #define NEXT_ACTION_LIMIT_Y_OFF 20
 #define NEXT_ACTION_SET_DRV_CURR 21
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
 #define NEXT_ACTION_LASER_VALU 22
+#endif
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
 #define NEXT_ACTION_SET_WATER_FLOW_THRE 23
 #endif
 
@@ -296,7 +298,7 @@ void gcode_status_line() {
       if (limit_input() & (1<<X1_LIMIT_BIT)) {
         printString("L1");  // Limit X1 Hit
       }
-      #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+      #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
       if (limit_input() & (1<<X2_LIMIT_BIT)) {
         printString("L2");  // Limit X2 Hit
       }
@@ -304,14 +306,14 @@ void gcode_status_line() {
       if (limit_input() & (1<<Y1_LIMIT_BIT)) {
         printString("L3");  // Limit Y1 Hit
       }
-      #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+      #if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
       if (limit_input() & (1<<Y2_LIMIT_BIT)) {
         printString("L4");  // Limit Y21 Hit
       }
       #endif
     }
 
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
     // Water Flow
     if (judg_water_flow()) {
         printString("C");
@@ -360,8 +362,10 @@ uint8_t gcode_execute_line(char *line) {
   gc.status_code = STATUS_OK;
   float fDrvCurr[3];
   memset(&fDrvCurr, 0, sizeof(fDrvCurr));
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
   uint8_t uiLaserPower = 0;
+#endif
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
   uint32_t uiWaterFlowThre = 0;
 #endif
 
@@ -438,11 +442,13 @@ uint8_t gcode_execute_line(char *line) {
           case 94: next_action = NEXT_ACTION_LIMIT_Y_ON;break;
           case 95: next_action = NEXT_ACTION_LIMIT_Y_OFF;break;
           case 96: next_action = NEXT_ACTION_SET_DRV_CURR;break;
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
           case 97:
                 next_action = NEXT_ACTION_LASER_VALU;
                 uiLaserPower = 0;
                 break;
+#endif
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
           case 98:
                 next_action = NEXT_ACTION_SET_WATER_FLOW_THRE;
                 uiWaterFlowThre = 0;
@@ -524,7 +530,7 @@ uint8_t gcode_execute_line(char *line) {
             gc.laser_pwm = value;
 // C:Raster End
         }
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
         if (next_action == NEXT_ACTION_LASER_VALU) {
             uiLaserPower = value;
         }
@@ -731,11 +737,13 @@ uint8_t gcode_execute_line(char *line) {
     case NEXT_ACTION_SET_DRV_CURR:
       driver_current_enable(fDrvCurr[X_AXIS], fDrvCurr[Y_AXIS]);
       break;
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
     case NEXT_ACTION_LASER_VALU:
       control_laser_intensity(uiLaserPower);
       control_laser_pwm(uiLaserPower);
       break;
+#endif
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
     case NEXT_ACTION_SET_WATER_FLOW_THRE:
       set_water_flow_thre(uiWaterFlowThre);
       break;

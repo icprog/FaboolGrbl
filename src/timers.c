@@ -15,8 +15,11 @@ Setup the hardware timers for:
 #include "stm32f2xx_hal.h"
 #include "timers.h"
 #include "stepper.h"
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
 #include "i2c.h"
+#endif
+#if GRBL_MODEL == FABOOL_LASER_DS
+#include "gpio.h"
 #endif
 
 //-----------------------------------------------------------------------------
@@ -236,7 +239,7 @@ void control_laser_intensity(uint8_t intensity) {
 
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
     if (intensity == 0) {
         TIMx->CCR3 = (uint8_t)0;
     }
@@ -252,7 +255,7 @@ void control_laser_pwm(uint8_t intensity) {
 
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
     TIMx->PSC = ((SystemCoreClock / 2) / (LASER_TIMER_HZ3 * LASER_TIMER_PERIOD)) - 1;
 #else
     if (intensity > 40) {
@@ -435,6 +438,11 @@ uint8_t judg_water_flow(void)
 void set_water_flow_thre(uint32_t ui_threshold)
 {
     ui_water_flow_threshold = ui_threshold;
+}
+#elif GRBL_MODEL == FABOOL_LASER_DS
+uint8_t judg_water_flow(void)
+{
+    return (HAL_GPIO_ReadPin(GPIO_BASE(WATER_FLOW), GPIO_BIT(WATER_FLOW)) == GPIO_PIN_RESET);
 }
 #endif
 //-----------------------------------------------------------------------------
