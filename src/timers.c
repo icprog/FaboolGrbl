@@ -442,7 +442,7 @@ void set_water_flow_thre(uint32_t ui_threshold)
 #elif GRBL_MODEL == FABOOL_LASER_DS
 uint8_t judg_water_flow(void)
 {
-    return (HAL_GPIO_ReadPin(GPIO_BASE(WATER_FLOW), GPIO_BIT(WATER_FLOW)) == GPIO_PIN_RESET);
+    return (HAL_GPIO_ReadPin(GPIO_BASE(WATER_FLOW), GPIO_BIT(WATER_FLOW)) == GPIO_PIN_SET);
 }
 #endif
 //-----------------------------------------------------------------------------
