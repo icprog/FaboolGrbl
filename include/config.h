@@ -29,12 +29,14 @@
 #define SMART_LASER_CO2     2
 #define FABOOL_LASER_CO2    3
 #define FABOOL_LASER_DS     4
+#define FABOOL_LASER_MC     5
 
 //#define GRBL_MODEL    SMART_LASER_MINI
 //#define GRBL_MODEL  FABOOL_LASER_MINI
 //#define GRBL_MODEL    SMART_LASER_CO2
 //#define GRBL_MODEL    FABOOL_LASER_CO2
-#define GRBL_MODEL    FABOOL_LASER_DS
+//#define GRBL_MODEL    FABOOL_LASER_DS
+#define GRBL_MODEL    FABOOL_LASER_MC
 
 
 #if GRBL_MODEL == SMART_LASER_MINI
@@ -47,6 +49,8 @@
     #define GRBL_STR   " FaboolLaserCo2"
 #elif GRBL_MODEL == FABOOL_LASER_DS
     #define GRBL_STR   " FaboolLaserDS"
+#elif GRBL_MODEL == FABOOL_LASER_MC
+    #define GRBL_STR   " FaboolLaserMC"
 #endif
 
 
@@ -78,6 +82,21 @@
 #elif GRBL_MODEL == FABOOL_LASER_DS
     #define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
     #define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+#elif GRBL_MODEL == FABOOL_LASER_MC
+    #define BASE_OFFSET_X (+0.0)
+    #define BASE_OFFSET_Y (+0.0)
+    #define BASE_ANGLE 180.0
+    #define AXISLEN_A 200.0
+    #define AXISLEN_B 200.0
+    #define CONFIG_X_STEPS_PER_DEG 1422.22222222 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_Y_STEPS_PER_DEG 1422.22222222 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define SVPOS_TO_RAD(p) (((double)(p) / 180.0) * M_PI)
+    #define FIELD_W (575.0)
+    #define X_OFS (FIELD_W/2 - 132.5)
+
+    #define CONFIG_R1 200.0
+    #define CONFIG_R2 150.0
+
 #endif
 #define CONFIG_Z_STEPS_PER_MM 44.44444444 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #define CONFIG_PULSE_MICROSECONDS 5
@@ -85,8 +104,13 @@
 #define CONFIG_SEEKRATE 8000.0
 #define CONFIG_ACCELERATION 1800000.0 // mm/min^2, typically 1000000-8000000, divide by (60*60) to get mm/sec^2
 #define CONFIG_JUNCTION_DEVIATION 0.006 // mm
+#if GRBL_MODEL == FABOOL_LASER_MC
+#define CONFIG_X_ORIGIN_OFFSET 0.0  // mm, x-offset of table origin from physical home
+#define CONFIG_Y_ORIGIN_OFFSET 0.0  // mm, y-offset of table origin from physical home
+#else
 #define CONFIG_X_ORIGIN_OFFSET 5.0  // mm, x-offset of table origin from physical home
 #define CONFIG_Y_ORIGIN_OFFSET 5.0  // mm, y-offset of table origin from physical home
+#endif
 #define CONFIG_Z_ORIGIN_OFFSET 0.0   // mm, z-offset of table origin from physical home
 #define CONFIG_INVERT_X_AXIS 1  // 0 is regular, 1 inverts the y direction
 #define CONFIG_INVERT_Y_AXIS 1  // 0 is regular, 1 inverts the y direction

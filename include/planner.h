@@ -36,17 +36,17 @@
 
 // Raster structure, used by gcode, planner and stepper.
 typedef struct _raster {
-	uint8_t buffer[RASTER_BUFFER_SIZE];		// Raster data buffer
-	uint16_t length;
+    uint8_t buffer[RASTER_BUFFER_SIZE];     // Raster data buffer
+    uint16_t length;
 
-	uint8_t intensity;
-	uint8_t invert;
+    uint8_t intensity;
+    uint8_t invert;
 
-	double dot_size;
-	double x_off;
-	double y_off;
+    double dot_size;
+    double x_off;
+    double y_off;
 
-	uint8_t reverse;
+    uint8_t reverse;
 } raster_t;
 // I:Raster End
 
@@ -71,7 +71,7 @@ typedef struct {
   double millimeters;                 // The total travel of this block in mm
 // C:Raster Start
 //  uint8_t nominal_laser_intensity;    // 0-255 is 0-100% percentage
-  uint8_t laser_pwm;    			  // 0-255 is 0-100% percentage
+  uint8_t laser_pwm;                  // 0-255 is 0-100% percentage
 // C:Raster End
   bool recalculate_flag;              // Planner flag to recalculate trapezoids on entry junction
   bool nominal_length_flag;           // Planner flag for nominal speed always reached
@@ -82,7 +82,7 @@ typedef struct {
   uint32_t accelerate_until;          // The index of the step event on which to stop acceleration
   uint32_t decelerate_after;          // The index of the step event on which to start decelerating
 // I:Raster Start
-  uint16_t laser_ppi;           	  // Number of pulses per inch
+  uint16_t laser_ppi;                 // Number of pulses per inch
   raster_t raster;
 // I:Raster End
 
@@ -97,8 +97,8 @@ void planner_init();
 // C:Raster Start
 //void planner_line(double x, double y, double z, double feed_rate, uint8_t nominal_laser_intensity);
 void planner_line(double x, double y, double z,
-		          double feed_rate,
-		          uint8_t laser_pwm, uint16_t laser_ppi);
+                  double feed_rate,
+                  uint8_t laser_pwm, uint16_t laser_ppi);
 
 // C:Raster End
 
@@ -108,9 +108,9 @@ void planner_line(double x, double y, double z,
 // The value of x_off/y_off specifies the offset (acceleration margin) before the actual raster.
 // raster and raster_len contain the pointer and length of buffer containing 0-255 PWM values for each dot.
 void planner_raster(double x, double y, double z,
-		            double feed_rate,
-		            uint8_t nominal_laser_intensity,
-		            raster_t *raster);
+                    double feed_rate,
+                    uint8_t nominal_laser_intensity,
+                    raster_t *raster);
 
 
 // Add a new piercing action, lasing at one spot.
@@ -134,6 +134,7 @@ void planner_discard_current_block();
 // purge all command in the buffer
 void planner_reset_block_buffer();
 
+void planner_set_stepper(int32_t x, int32_t y, int32_t z);
 
 // Reset the position vector
 void planner_set_position(double x, double y, double z);

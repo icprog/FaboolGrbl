@@ -91,7 +91,7 @@ static inline void stepper_motor_disable(void)
     #define Y2_LIMIT_BIT 2
 #endif
 
-#if GRBL_MODEL == SMART_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MINI
+#if GRBL_MODEL == SMART_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MC
     #define LIMIT_MASK ((1 << X1_LIMIT_BIT) | (1 << Y1_LIMIT_BIT))
 #else
     #define LIMIT_MASK ((1 << X1_LIMIT_BIT) | (1 << Y1_LIMIT_BIT) | (1 << X2_LIMIT_BIT) | (1 << Y2_LIMIT_BIT))
@@ -99,7 +99,7 @@ static inline void stepper_motor_disable(void)
 
 static inline uint16_t limit_input(void)
 {
-#if GRBL_MODEL == SMART_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MINI
+#if GRBL_MODEL == SMART_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MINI || GRBL_MODEL == FABOOL_LASER_MC
     return (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_X1), GPIO_BIT(LIMIT_X1)) == GPIO_PIN_RESET) << X1_LIMIT_BIT |
             (HAL_GPIO_ReadPin(GPIO_BASE(LIMIT_Y1), GPIO_BIT(LIMIT_Y1)) == GPIO_PIN_RESET) << Y1_LIMIT_BIT;
 #else

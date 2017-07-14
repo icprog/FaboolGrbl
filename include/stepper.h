@@ -48,6 +48,9 @@ void stepper_stop_resume();
 
 // Get the actual position of the head in mm.
 // This is as accurate as an open loop system can be.
+int32_t stepper_get_x();
+int32_t stepper_get_y();
+int32_t stepper_get_z();
 double stepper_get_position_x();
 double stepper_get_position_y();
 double stepper_get_position_z();
