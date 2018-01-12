@@ -88,6 +88,40 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
   /* USER CODE END I2C1_MspInit 1 */
   }
 
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
+  if(hi2c->Instance==I2C3)
+  {
+  /* USER CODE BEGIN I2C3_MspInit 0 */
+    __GPIOC_CLK_ENABLE();
+    __GPIOA_CLK_ENABLE();
+
+  /* USER CODE END I2C3_MspInit 0 */
+
+    /**I2C3 GPIO Configuration
+    PC9     ------> I2C3_SDA
+    PA8     ------> I2C3_SCL
+    */
+    GPIO_InitStruct.Pin = GPIO_PIN_9;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_8;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    GPIO_InitStruct.Alternate = GPIO_AF4_I2C3;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /* Peripheral clock enable */
+    __I2C3_CLK_ENABLE();
+  /* USER CODE BEGIN I2C3_MspInit 1 */
+
+  /* USER CODE END I2C3_MspInit 1 */
+  }
+#endif
 }
 
 void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
@@ -108,7 +142,26 @@ void HAL_I2C_MspDeInit(I2C_HandleTypeDef* hi2c)
     HAL_GPIO_DeInit(GPIOB, GPIO_PIN_6|GPIO_PIN_7);
 
   }
-  /* USER CODE BEGIN I2C1_MspDeInit 1 */
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
+  if(hi2c->Instance==I2C3)
+  {
+  /* USER CODE BEGIN I2C3_MspDeInit 0 */
+
+  /* USER CODE END I2C3_MspDeInit 0 */
+    /* Peripheral clock disable */
+    __I2C3_CLK_DISABLE();
+
+    /**I2C3 GPIO Configuration
+    PC9     ------> I2C3_SDA
+    PA8     ------> I2C3_SCL
+    */
+    HAL_GPIO_DeInit(GPIOC, GPIO_PIN_9);
+
+    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_8);
+
+  }
+#endif
+   /* USER CODE BEGIN I2C1_MspDeInit 1 */
 
   /* USER CODE END I2C1_MspDeInit 1 */
 
