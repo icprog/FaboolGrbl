@@ -78,78 +78,8 @@ static void planner_movement(double x, double y, double z,
   // calculate target position in absolute steps
   int32_t target[3];
 
-#if GRBL_MODEL == FABOOL_LASER_MC
-//  double s, nx, ny, s1, s2;
-//
-//  s = -1.0;
-//  nx = -x;
-//  ny = -y;
-//  nx = (nx * cos(-BASE_ANGLE / 180.0 * M_PI) - ny * sin(-BASE_ANGLE / 180.0 * M_PI)) + X_OFS;
-//  ny = (nx * sin(-BASE_ANGLE / 180.0 * M_PI) + ny * cos(-BASE_ANGLE / 180.0 * M_PI));
-//  if (hypot(nx, ny) >= AXISLEN_A + AXISLEN_B) {
-//    s1 = atan2(ny, nx) / M_PI * 180.0;
-//    s2 = 0.0;
-//  }
-//  else {
-//    double a, b;
-//    a = acos( (-(nx * nx + ny * ny) + AXISLEN_A * AXISLEN_A + AXISLEN_B * AXISLEN_B) / (2 * AXISLEN_A * AXISLEN_B));
-//    b = s * acos( (- AXISLEN_A * AXISLEN_A + AXISLEN_B * AXISLEN_B + (nx * nx + ny * ny)) / (2 * AXISLEN_A * sqrt(nx * nx + ny * ny)));
-//
-//    if (nx < 0) {
-//      if (ny >= 0) {
-//        s1 = M_PI + atan(ny / nx) + b;
-//      }
-//      else {
-//        s1 = atan(ny / nx) + b - M_PI;
-//      }
-//    }
-//    else {
-//      s1 = atan(ny / nx) + b;
-//    }
-//    s2 = -(M_PI - a) * s;
-//
-//    if (s1 != 0.0) {
-//      s1 = s1 / M_PI * 180.0;
-//    }
-//    if (s2 != 0.0) {
-//      s2 = s2 / M_PI * 180.0;
-//    }
-//  }
-
-  double nx, ny, x_2, y_2, r1_2, r2_2, c1, c2, sqrt1, sqrt2, atan_yx, s1, s2;
-  nx = x - 150.0;
-  ny = y + 100.0;
-  x_2 = nx * nx;
-  y_2 = ny * ny;
-//  trace_printf ("%ld, %ld, %ld, %ld, %ld, %ld\n", (int32_t)(x*10000), (int32_t)(y*10000), (int32_t)(nx*10000), (int32_t)(ny*10000), (int32_t)(x_2*10000), (int32_t)(y_2*10000));
-
-  r1_2 = CONFIG_R1 * CONFIG_R1;
-  r2_2 = CONFIG_R2 * CONFIG_R2;
-  c1 = (x_2 + y_2 + r1_2 - r2_2) / (2 * CONFIG_R1);
-  c2 = (x_2 + y_2 - r1_2 + r2_2) / (2 * CONFIG_R2);
-  sqrt1 = sqrt(x_2 + y_2 - c1* c1);
-  sqrt2 = sqrt(x_2 + y_2 - c2* c2);
-
-
-  //  atan_yx = atan2(nx, ny);
-//  if (atan_yx >= 0) {
-//    s1 = (atan_yx - atan2(c1, sqrt1)) * 180.0 / M_PI;
-//    s2 = (atan2(c1, sqrt1) + atan2(c2, sqrt2)) * 180.0 / M_PI;
-//  }
-//  else {
-//    s1 = (atan_yx + atan2(c1, sqrt1)) * 180.0 / M_PI;
-//    s2 = (-atan2(c1, sqrt1) - atan2(c2, sqrt2)) * 180.0 / M_PI;
-//  }
-  s1 = -1 * ((atan2(ny, nx) - atan2(c1, sqrt1)) * 180.0 / M_PI);
-  s2 = 180.0 - ((atan2(c1, sqrt1) + atan2(c2, sqrt2)) * 180.0 / M_PI);
-
-
-  target[X_AXIS] = lround(s1 * CONFIG_X_STEPS_PER_DEG);
-  target[Y_AXIS] = lround(s2 * CONFIG_Y_STEPS_PER_DEG);
-#else
   target[X_AXIS] = lround(x*CONFIG_X_STEPS_PER_MM);
   target[Y_AXIS] = lround(y*CONFIG_Y_STEPS_PER_MM);
-#endif
   target[Z_AXIS] = lround(z*CONFIG_Z_STEPS_PER_MM);
 
   // calculate the buffer head and check for space
@@ -194,22 +124,11 @@ static void planner_movement(double x, double y, double z,
 
   // compute direction bits for this block
   block->direction_bits = 0;
-#if GRBL_MODEL == FABOOL_LASER_MC
-  if (target[X_AXIS] >= position[X_AXIS]) { block->direction_bits |= GPIO_BIT(DIR_X); }
-  block->steps_x = labs(target[X_AXIS]-position[X_AXIS]);
-
-  if ((position[Y_AXIS] - target[Y_AXIS]) + (position[X_AXIS] - target[X_AXIS]) >= 0) {
-    block->direction_bits |= GPIO_BIT(DIR_Y);
-  }
-  block->steps_y = labs((position[Y_AXIS] - target[Y_AXIS]) + (position[X_AXIS] - target[X_AXIS]));
-
-#else
   if (target[X_AXIS] < position[X_AXIS]) { block->direction_bits |= GPIO_BIT(DIR_X); }
   if (target[Y_AXIS] < position[Y_AXIS]) { block->direction_bits |= GPIO_BIT(DIR_Y); }
   // number of steps for each axis
   block->steps_x = labs(target[X_AXIS]-position[X_AXIS]);
   block->steps_y = labs(target[Y_AXIS]-position[Y_AXIS]);
-#endif
 
   block->steps_z = labs(target[Z_AXIS]-position[Z_AXIS]);
   block->step_event_count = max(block->steps_x, max(block->steps_y, block->steps_z));
@@ -217,34 +136,8 @@ static void planner_movement(double x, double y, double z,
 
   // compute path vector in terms of absolute step target and current positions
   double delta_mm[3];
-#if GRBL_MODEL == FABOOL_LASER_MC
-  s1 = (position[X_AXIS] / CONFIG_X_STEPS_PER_DEG) * M_PI / 180.0;
-  s2 = (position[Y_AXIS] / CONFIG_Y_STEPS_PER_DEG) * M_PI / 180.0;
-
-  double x_pos = 150.0 + CONFIG_R1 * sin(s1) + CONFIG_R2 * sin(s1 + s2);
-  double y_pos = -100 + CONFIG_R1 * cos(s1) + CONFIG_R2 * cos(s1 + s2);
-
-  delta_mm[X_AXIS] = x - (x_pos);
-  delta_mm[Y_AXIS] = y - (y_pos);
-
-//  s1 = position[X_AXIS] / CONFIG_X_STEPS_PER_DEG;
-//  s2 = position[Y_AXIS] / CONFIG_Y_STEPS_PER_DEG;
-//
-//  double x_pos = cos(SVPOS_TO_RAD(s1)) * AXISLEN_A + cos(SVPOS_TO_RAD(s1 + s2)) * AXISLEN_B - X_OFS;
-//  double y_pos = sin(SVPOS_TO_RAD(s1)) * AXISLEN_A + sin(SVPOS_TO_RAD(s1 + s2)) * AXISLEN_B;
-//
-//  nx= x_pos;
-//  ny= y_pos;
-//
-//  x_pos = (nx * cos(BASE_ANGLE / 180.0 * M_PI) - ny * sin(BASE_ANGLE / 180.0 * M_PI)) + BASE_OFFSET_X;
-//  y_pos = (nx * sin(BASE_ANGLE / 180.0 * M_PI) + ny * cos(BASE_ANGLE / 180.0 * M_PI)) + BASE_OFFSET_Y;
-//
-//  delta_mm[X_AXIS] = x - (-x_pos);
-//  delta_mm[Y_AXIS] = y - (-y_pos);
-#else
   delta_mm[X_AXIS] = (target[X_AXIS]-position[X_AXIS])/CONFIG_X_STEPS_PER_MM;
   delta_mm[Y_AXIS] = (target[Y_AXIS]-position[Y_AXIS])/CONFIG_Y_STEPS_PER_MM;
-#endif
 
   delta_mm[Z_AXIS] = (target[Z_AXIS]-position[Z_AXIS])/CONFIG_Z_STEPS_PER_MM;
   block->millimeters = sqrt( (delta_mm[X_AXIS]*delta_mm[X_AXIS]) +
@@ -495,77 +388,8 @@ void planner_set_stepper(int32_t x, int32_t y, int32_t z) {
 
 // Reset the planner position vector and planner speed
 void planner_set_position(double x, double y, double z) {
-#if GRBL_MODEL == FABOOL_LASER_MC
-
-  double nx, ny, x_2, y_2, r1_2, r2_2, c1, c2, sqrt1, sqrt2, atan_yx, s1, s2;
-
-  nx = x - 150;
-  ny = y + 100;
-  x_2 = nx * nx;
-  y_2 = ny * ny;
-  r1_2 = CONFIG_R1 * CONFIG_R1;
-  r2_2 = CONFIG_R2 * CONFIG_R2;
-  c1 = (x_2 + y_2 + r1_2 - r2_2) / (2 * CONFIG_R1);
-  c2 = (x_2 + y_2 - r1_2 + r2_2) / (2 * CONFIG_R2);
-  sqrt1 = sqrt(x_2 + y_2 - c1* c1);
-  sqrt2 = sqrt(x_2 + y_2 - c2* c2);
-//  atan_yx = atan2(nx, ny);
-//  if (atan_yx >= 0) {
-//    s1 = (atan_yx - atan2(c1, sqrt1)) * 180.0 / M_PI;
-//    s2 = (atan2(c1, sqrt1) + atan2(c2, sqrt2)) * 180.0 / M_PI;
-//  }
-//  else {
-//    s1 = (atan_yx + atan2(c1, sqrt1)) * 180.0 / M_PI;
-//    s2 = (-atan2(c1, sqrt1) - atan2(c2, sqrt2)) * 180.0 / M_PI;
-//  }
-  s1 = -1 * ((atan2(ny, nx) - atan2(c1, sqrt1)) * 180.0 / M_PI);
-  s2 = 180.0 - ((atan2(c1, sqrt1) + atan2(c2, sqrt2)) * 180.0 / M_PI);
-
-
-//  double s, nx, ny, s1, s2;
-//
-//  s = -1.0;
-//  nx = -x;
-//  ny = -y;
-//  nx = (nx * cos(-BASE_ANGLE / 180.0 * M_PI) - ny * sin(-BASE_ANGLE / 180.0 * M_PI)) + X_OFS;
-//  ny = (nx * sin(-BASE_ANGLE / 180.0 * M_PI) + ny * cos(-BASE_ANGLE / 180.0 * M_PI));
-//  if (hypot(nx, ny) >= AXISLEN_A + AXISLEN_B) {
-//    s1 = atan2(ny, nx) / M_PI * 180.0;
-//    s2 = 0.0;
-//  }
-//  else {
-//    double a, b;
-//    a = acos( (-(nx * nx + ny * ny) + AXISLEN_A * AXISLEN_A + AXISLEN_B * AXISLEN_B) / (2 * AXISLEN_A * AXISLEN_B));
-//    b = s * acos( (- AXISLEN_A * AXISLEN_A + AXISLEN_B * AXISLEN_B + (nx * nx + ny * ny)) / (2 * AXISLEN_A * sqrt(nx * nx + ny * ny)));
-//
-//    if (nx < 0) {
-//      if (ny >= 0) {
-//        s1 = M_PI + atan(ny / nx) + b;
-//      }
-//      else {
-//        s1 = atan(ny / nx) + b - M_PI;
-//      }
-//    }
-//    else {
-//      s1 = atan(ny / nx) + b;
-//    }
-//    s2 = -(M_PI - a) * s;
-//
-//    if (s1 != 0.0) {
-//      s1 = s1 / M_PI * 180.0;
-//    }
-//    if (s2 != 0.0) {
-//      s2 = s2 / M_PI * 180.0;
-//    }
-//  }
-
-  position[X_AXIS] = lround(s1 * CONFIG_X_STEPS_PER_DEG);
-  position[Y_AXIS] = lround(s2 * CONFIG_Y_STEPS_PER_DEG);
-
-#else
   position[X_AXIS] = lround(x*CONFIG_X_STEPS_PER_MM);
   position[Y_AXIS] = lround(y*CONFIG_Y_STEPS_PER_MM);
-#endif
   position[Z_AXIS] = lround(z*CONFIG_Z_STEPS_PER_MM);
   previous_nominal_speed = 0.0; // resets planner junction speeds
   clear_vector_double(previous_unit_vec);

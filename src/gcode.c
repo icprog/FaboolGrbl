@@ -649,7 +649,6 @@ uint8_t gcode_execute_line(char *line) {
       clear_vector(gc.position);
       clear_vector(target);
       planner_set_position(0.0, 0.0, 0.0);
-#if GRBL_MODEL != FABOOL_LASER_MC
       // move head to g54 offset
       gc.offselect = OFFSET_G54;
       target[X_AXIS] = 0;
@@ -662,7 +661,6 @@ uint8_t gcode_execute_line(char *line) {
 //                    gc.seek_rate, 0 );
                     gc.seek_rate, 0, 0 );
 // C:Raster End
-#endif
       break;
     case NEXT_ACTION_SET_COORDINATE_OFFSET:
       if (cs == OFFSET_G54 || cs == OFFSET_G55) {

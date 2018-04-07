@@ -98,11 +98,7 @@ void stepper_init() {
   step_wr(DEFAULT_STEPPING_INVERT_MASK);
 
   // Enable the stepper motors
-#if GRBL_MODEL == FABOOL_LASER_MC
-  driver_current_enable(700, 700);
-#else
   driver_current_enable(400, 700);
-#endif
   stepper_motor_enable();
 
   adjust_speed(MINIMUM_STEPS_PER_MINUTE);
@@ -187,134 +183,24 @@ int32_t stepper_get_x() {
   return stepper_position[X_AXIS];
 }
 int32_t stepper_get_y() {
-#if GRBL_MODEL == FABOOL_LASER_MC
-  return stepper_position[Y_AXIS] - stepper_position[X_AXIS];
-#else
   return stepper_position[Y_AXIS];
-#endif
 }
 int32_t stepper_get_z() {
   return stepper_position[Z_AXIS];
 }
 double stepper_get_position_x() {
-#if GRBL_MODEL == FABOOL_LASER_MC
-  double s1 = (stepper_position[X_AXIS] / CONFIG_X_STEPS_PER_DEG) * M_PI / 180.0;
-  double s2 = ((stepper_position[Y_AXIS] - stepper_position[X_AXIS]) / CONFIG_Y_STEPS_PER_DEG) * M_PI / 180.0;
-
-  return 150.0 + CONFIG_R1 * sin(s1) + CONFIG_R2 * sin(s1 + s2);
-
-//  double s1 = stepper_position[X_AXIS] / CONFIG_X_STEPS_PER_DEG;
-//  double s2 = (stepper_position[Y_AXIS] - stepper_position[X_AXIS]) / CONFIG_Y_STEPS_PER_DEG;
-//
-//  double x_pos = cos(SVPOS_TO_RAD(s1)) * AXISLEN_A + cos(SVPOS_TO_RAD(s1 + s2)) * AXISLEN_B - X_OFS;
-//  double y_pos = sin(SVPOS_TO_RAD(s1)) * AXISLEN_A + sin(SVPOS_TO_RAD(s1 + s2)) * AXISLEN_B;
-//
-//  double nx= x_pos;
-//  double ny= y_pos;
-//
-//  x_pos = (nx * cos(BASE_ANGLE / 180.0 * M_PI) - ny * sin(BASE_ANGLE / 180.0 * M_PI)) + BASE_OFFSET_X;
-//
-//  return -x_pos;
-#else
   return stepper_position[X_AXIS]/CONFIG_X_STEPS_PER_MM;
-#endif
 }
 double stepper_get_position_y() {
-#if GRBL_MODEL == FABOOL_LASER_MC
-  double s1 = (stepper_position[X_AXIS] / CONFIG_X_STEPS_PER_DEG) * M_PI / 180.0;
-  double s2 = ((stepper_position[Y_AXIS] - stepper_position[X_AXIS]) / CONFIG_Y_STEPS_PER_DEG) * M_PI / 180.0;
-
-  return -100.0 + CONFIG_R1 * cos(s1) + CONFIG_R2 * cos(s1 + s2);
-
-//  double s1 = stepper_position[X_AXIS] / CONFIG_X_STEPS_PER_DEG;
-//  double s2 = (stepper_position[Y_AXIS] - stepper_position[X_AXIS]) / CONFIG_Y_STEPS_PER_DEG;
-//
-//  double x_pos = cos(SVPOS_TO_RAD(s1)) * AXISLEN_A + cos(SVPOS_TO_RAD(s1 + s2)) * AXISLEN_B - X_OFS;
-//  double y_pos = sin(SVPOS_TO_RAD(s1)) * AXISLEN_A + sin(SVPOS_TO_RAD(s1 + s2)) * AXISLEN_B;
-//
-//  double nx= x_pos;
-//  double ny= y_pos;
-//
-//  y_pos = (nx * sin(BASE_ANGLE / 180.0 * M_PI) + ny * cos(BASE_ANGLE / 180.0 * M_PI)) + BASE_OFFSET_Y;
-//
-//  return -y_pos;
-#else
   return stepper_position[Y_AXIS]/CONFIG_Y_STEPS_PER_MM;
-#endif
 }
 double stepper_get_position_z() {
   return stepper_position[Z_AXIS]/CONFIG_Z_STEPS_PER_MM;
 }
 void stepper_set_position(double x, double y, double z) {
   stepper_synchronize();  // wait until processing is done
-#if GRBL_MODEL == FABOOL_LASER_MC
-  double nx, ny, x_2, y_2, r1_2, r2_2, c1, c2, sqrt1, sqrt2, atan_yx, s1, s2;
-
-  nx = x - 150;
-  ny = y + 100;
-  x_2 = nx * nx;
-  y_2 = ny * ny;
-  r1_2 = CONFIG_R1 * CONFIG_R1;
-  r2_2 = CONFIG_R2 * CONFIG_R2;
-  c1 = (x_2 + y_2 + r1_2 - r2_2) / (2 * CONFIG_R1);
-  c2 = (x_2 + y_2 - r1_2 + r2_2) / (2 * CONFIG_R2);
-  sqrt1 = sqrt(x_2 + y_2 - c1* c1);
-  sqrt2 = sqrt(x_2 + y_2 - c2* c2);
-//  atan_yx = atan2(nx, ny);
-//  if (atan_yx >= 0) {
-//    s1 = (atan_yx - atan2(c1, sqrt1)) * 180.0 / M_PI;
-//    s2 = (atan2(c1, sqrt1) + atan2(c2, sqrt2)) * 180.0 / M_PI;
-//  }
-//  else {
-//    s1 = (atan_yx + atan2(c1, sqrt1)) * 180.0 / M_PI;
-//    s2 = (-atan2(c1, sqrt1) - atan2(c2, sqrt2)) * 180.0 / M_PI;
-//  }
-  s1 = -1 * ((atan2(ny, nx) - atan2(c1, sqrt1)) * 180.0 / M_PI);
-  s2 = 180.0 - ((atan2(c1, sqrt1) + atan2(c2, sqrt2)) * 180.0 / M_PI);
-
-//  double s, nx, ny, s1, s2;
-//
-//  s = -1.0;
-//  nx = -x;
-//  ny = -y;
-//  nx = (nx * cos(-BASE_ANGLE / 180.0 * M_PI) - ny * sin(-BASE_ANGLE / 180.0 * M_PI)) + X_OFS;
-//  ny = (nx * sin(-BASE_ANGLE / 180.0 * M_PI) + ny * cos(-BASE_ANGLE / 180.0 * M_PI));
-//  if (hypot(nx, ny) >= AXISLEN_A + AXISLEN_B) {
-//    s1 = atan2(ny, nx) / M_PI * 180.0;
-//    s2 = 0.0;
-//  }
-//  else {
-//    double a, b;
-//    a = acos( (-(nx * nx + ny * ny) + AXISLEN_A * AXISLEN_A + AXISLEN_B * AXISLEN_B) / (2 * AXISLEN_A * AXISLEN_B));
-//    b = s * acos( (- AXISLEN_A * AXISLEN_A + AXISLEN_B * AXISLEN_B + (nx * nx + ny * ny)) / (2 * AXISLEN_A * sqrt(nx * nx + ny * ny)));
-//
-//    if (nx < 0) {
-//      if (ny >= 0) {
-//        s1 = M_PI + atan(ny / nx) + b;
-//      }
-//      else {
-//        s1 = atan(ny / nx) + b - M_PI;
-//      }
-//    }
-//    else {
-//      s1 = atan(ny / nx) + b;
-//    }
-//    s2 = -(M_PI - a) * s;
-//
-//    if (s1 != 0.0) {
-//      s1 = s1 / M_PI * 180.0;
-//    }
-//    if (s2 != 0.0) {
-//      s2 = s2 / M_PI * 180.0;
-//    }
-//  }
-
-  stepper_position[X_AXIS] = lround(s1 * CONFIG_X_STEPS_PER_DEG);
-  stepper_position[Y_AXIS] = lround(s2 * CONFIG_Y_STEPS_PER_DEG);
-#else
   stepper_position[X_AXIS] = floor(x*CONFIG_X_STEPS_PER_MM + 0.5);
   stepper_position[Y_AXIS] = floor(y*CONFIG_Y_STEPS_PER_MM + 0.5);
-#endif
   stepper_position[Z_AXIS] = floor(z*CONFIG_Z_STEPS_PER_MM + 0.5);
 }
 
@@ -638,32 +524,18 @@ static void homing_cycle(bool x_axis, bool y_axis, bool z_axis, bool reverse_dir
 }
 
 static void approach_limit_switch(bool x, bool y, bool z) {
-#if GRBL_MODEL == FABOOL_LASER_MC
-  homing_cycle(x, y, z,false, 200);
-#else
   homing_cycle(x, y, z,false, 600);
-#endif
 }
 
 static void leave_limit_switch(bool x, bool y, bool z) {
-#if GRBL_MODEL == FABOOL_LASER_MC
-  homing_cycle(x, y, z, true, 200);
-#else
   homing_cycle(x, y, z, true, 10000);
-#endif
 }
 
 void stepper_homing_cycle() {
   stepper_synchronize();
   // home the x and y axis
-#if GRBL_MODEL == FABOOL_LASER_MC
-  leave_limit_switch(true, true, false);
   approach_limit_switch(true, true, false);
   leave_limit_switch(true, true, false);
-#else
-  approach_limit_switch(true, true, false);
-  leave_limit_switch(true, true, false);
-#endif
 }
 
 void stepper_limit_x_on_cycle()
