@@ -128,7 +128,7 @@ uint8_t serial_read(void)
 
     __disable_irq();
 
-    if (rx_buffer_open_slots == RX_CHUNK_SIZE) {  // enough slots opening up
+    if (rx_buffer_open_slots >= RX_CHUNK_SIZE) {  // enough slots opening up
       if (request_ready_flag) {
         send_ready_flag = 1;
         cdc_timer_start();
@@ -151,6 +151,7 @@ int serial_rx_hook(uint8_t data)
     switch (data) {
         case CMD_FEED_HOLD: {
             stepper_request_stop(STATUS_SERIAL_STOP_REQUEST);
+            gcode_init();
             break;
         }
         case CMD_CYCLE_START: {
@@ -218,8 +219,14 @@ void serial_write(uint8_t data)
     while (tx_wr_inc == tx_rd) {
     }
 
-    tx_fifo[tx_wr] = data;
-    tx_wr = tx_wr_inc;
+    if(data != '\n'){
+    	tx_fifo[tx_wr] = data;
+    	tx_wr = tx_wr_inc;
+    }
+    else if(data == '\n' && tx_fifo[tx_wr - 1] != '\n'){
+    	tx_fifo[tx_wr] = data;
+    	tx_wr = tx_wr_inc;
+    }
 
     cdc_timer_start();
 
