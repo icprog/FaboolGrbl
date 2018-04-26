@@ -215,6 +215,7 @@ USBD_CDC_ItfTypeDef USBD_Interface_fops_FS =
 void serial_write(uint8_t data)
 {
     uint32_t tx_wr_inc = (tx_wr == (TX_FIFO_SIZE - 1)) ? 0 : tx_wr + 1;
+    uint32_t tx_wr_pre = (tx_wr == 0) ? (TX_FIFO_SIZE - 1) : tx_wr - 1;
 
     while (tx_wr_inc == tx_rd) {
     }
@@ -223,7 +224,7 @@ void serial_write(uint8_t data)
     	tx_fifo[tx_wr] = data;
     	tx_wr = tx_wr_inc;
     }
-    else if(data == '\n' && tx_fifo[tx_wr - 1] != '\n'){
+    else if(tx_fifo[tx_wr_pre] != '\n'){
     	tx_fifo[tx_wr] = data;
     	tx_wr = tx_wr_inc;
     }

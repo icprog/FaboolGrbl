@@ -51,7 +51,7 @@
 
 
 // Version number
-#define GRBL_VERSION "2.10"
+#define GRBL_VERSION "3.00"
 
 
 // I:Raster Start
