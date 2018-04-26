@@ -151,7 +151,7 @@ int serial_rx_hook(uint8_t data)
     switch (data) {
         case CMD_FEED_HOLD: {
             stepper_request_stop(STATUS_SERIAL_STOP_REQUEST);
-            gcode_init();
+            gcode_reset();
             break;
         }
         case CMD_CYCLE_START: {

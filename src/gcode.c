@@ -134,6 +134,29 @@ void gcode_init() {
   numChars = 0;
 }
 
+void gcode_reset() {
+// I:Raster Start
+  gc.laser_ppi = 0U;
+  clear_vector(gc.raster.buffer);
+  gc.raster.length = 0;
+// I:Raster End
+  gc.offselect = OFFSET_G54;
+  // prime G54 cs
+  // refine with "G10 L2 P0 X_ Y_ Z_"
+  gc.offsets[X_AXIS] = CONFIG_X_ORIGIN_OFFSET;
+  gc.offsets[Y_AXIS] = CONFIG_Y_ORIGIN_OFFSET;
+  gc.offsets[Z_AXIS] = CONFIG_Z_ORIGIN_OFFSET;
+  // prime G55 cs
+  // refine with "G10 L2 P1 X_ Y_ Z_"
+  // or set to any current location with "G10 L20 P1"
+  gc.offsets[3+X_AXIS] = CONFIG_X_ORIGIN_OFFSET;
+  gc.offsets[3+Y_AXIS] = CONFIG_Y_ORIGIN_OFFSET;
+  gc.offsets[3+Z_AXIS] = CONFIG_Z_ORIGIN_OFFSET;
+  position_update_requested = false;
+  line_checksum_ok_already = false;
+  numChars = 0;
+}
+
 // I:Raster Start
 static void check_ppi_feedrate(void) {
       // Check that the configured PPI and Feedrate are compatible
