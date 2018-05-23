@@ -29,12 +29,14 @@
 #define SMART_LASER_CO2     2
 #define FABOOL_LASER_CO2    3
 #define FABOOL_LASER_DS     4
+#define FABOOL_LASER_CO2_DS 5
 
 //#define GRBL_MODEL    SMART_LASER_MINI
 //#define GRBL_MODEL  FABOOL_LASER_MINI
 //#define GRBL_MODEL    SMART_LASER_CO2
-#define GRBL_MODEL    FABOOL_LASER_CO2
+//#define GRBL_MODEL    FABOOL_LASER_CO2
 //#define GRBL_MODEL    FABOOL_LASER_DS
+#define GRBL_MODEL    FABOOL_LASER_CO2_DS
 
 
 #if GRBL_MODEL == SMART_LASER_MINI
@@ -47,11 +49,13 @@
     #define GRBL_STR   " FaboolLaserCo2"
 #elif GRBL_MODEL == FABOOL_LASER_DS
     #define GRBL_STR   " FaboolLaserDS"
+#elif GRBL_MODEL == FABOOL_LASER_CO2_DS
+    #define GRBL_STR   " FaboolLaserCo2DS"
 #endif
 
 
 // Version number
-#define GRBL_VERSION "2.10"
+#define GRBL_VERSION "3.00"
 
 
 // I:Raster Start
@@ -76,6 +80,9 @@
     #define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
     #define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #elif GRBL_MODEL == FABOOL_LASER_DS
+    #define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+    #define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
+#elif GRBL_MODEL == FABOOL_LASER_CO2_DS
     #define CONFIG_X_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
     #define CONFIG_Y_STEPS_PER_MM 53.33333333 //microsteps/mm (no integers, e.g. use 80.0 instead of 80)
 #endif

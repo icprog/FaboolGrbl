@@ -7,7 +7,9 @@
 extern ADC_HandleTypeDef hadc1;
 //-----------------------------------------------------------------------------
 void adc_init(void);
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
 uint8_t judg_power(void);
+#endif
 //-----------------------------------------------------------------------------
 #endif // ADC_H
 //-----------------------------------------------------------------------------
