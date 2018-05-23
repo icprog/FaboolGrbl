@@ -38,6 +38,7 @@
 
 // Initialize the parser
 void gcode_init();
+void gcode_reset();
 
 // read chars from serial
 // blocks until a whole line has been received
