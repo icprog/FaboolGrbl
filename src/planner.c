@@ -125,7 +125,11 @@ static void planner_movement(double x, double y, double z,
   // compute direction bits for this block
   block->direction_bits = 0;
   if (target[X_AXIS] < position[X_AXIS]) { block->direction_bits |= GPIO_BIT(DIR_X); }
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+  if (target[Y_AXIS] < position[Y_AXIS]) { block->direction_bits |= (GPIO_BIT(DIR_Y1) | GPIO_BIT(DIR_Y2)); }
+#else
   if (target[Y_AXIS] < position[Y_AXIS]) { block->direction_bits |= GPIO_BIT(DIR_Y); }
+#endif
   // number of steps for each axis
   block->steps_x = labs(target[X_AXIS]-position[X_AXIS]);
   block->steps_y = labs(target[Y_AXIS]-position[Y_AXIS]);

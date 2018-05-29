@@ -28,6 +28,7 @@ void adc_init(void)
     sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
     HAL_ADC_ConfigChannel(&hadc1, &sConfig);
 }
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_DS
 //-----------------------------------------------------------------------------
 uint8_t judg_power(void)
 {
@@ -42,4 +43,5 @@ uint8_t judg_power(void)
 
     return 0;
 }
+#endif
 //-----------------------------------------------------------------------------
