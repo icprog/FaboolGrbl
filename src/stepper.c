@@ -59,7 +59,11 @@
 
 
 #define DEFAULT_STEPPING_INVERT_MASK 0
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+#define DEFAULT_DIR_INVERT_MASK (GPIO_BIT(DIR_X) | GPIO_BIT(DIR_Y1) | GPIO_BIT(DIR_Y2))
+#else
 #define DEFAULT_DIR_INVERT_MASK (GPIO_BIT(DIR_X) | GPIO_BIT(DIR_Y))
+#endif
 
 //#define STEP_PULSE_DELAY 5 // Step pulse delay in microseconds. Default disabled.
 
@@ -98,7 +102,7 @@ void stepper_init() {
   step_wr(DEFAULT_STEPPING_INVERT_MASK);
 
   // Enable the stepper motors
-  driver_current_enable(400, 700);
+  driver_current_enable(400, 800);
   stepper_motor_enable();
 
   adjust_speed(MINIMUM_STEPS_PER_MINUTE);
@@ -155,7 +159,11 @@ void stepper_go_idle() {
 
   processing_flag = false;
   current_block = NULL;
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+  control_laser_intensity(0, 0);
+#else
   control_laser_intensity(0);
+#endif
 }
 
 // stop event handling
@@ -314,7 +322,11 @@ void step_period_isr(void)
 
       if (intensity != current_block->laser_pwm) {
           current_block->laser_pwm = intensity;
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+          control_laser_intensity(intensity, 0);
+#else
           control_laser_intensity(intensity);
+#endif
       }
       //break;
 // I:Raster End
@@ -335,10 +347,18 @@ void step_period_isr(void)
       }
       counter_y += current_block->steps_y;
       if (counter_y > 0) {
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+        step_bits |= (GPIO_BIT(STEP_Y1) | GPIO_BIT(STEP_Y2));
+#else
         step_bits |= GPIO_BIT(STEP_Y);
+#endif
         counter_y -= current_block->step_event_count;
         // also keep track of absolute position
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+        if ((dirn_bits & GPIO_BIT(DIR_Y1)) && (dirn_bits & GPIO_BIT(DIR_Y2))) {
+#else
         if (dirn_bits & GPIO_BIT(DIR_Y)) {
+#endif
           stepper_position[Y_AXIS] -= 1;
         } else {
           stepper_position[Y_AXIS] += 1;
@@ -462,7 +482,11 @@ static void adjust_speed( uint32_t steps_per_minute ) {
 // C:Raster End
                                ((float)steps_per_minute/(float)current_block->nominal_rate);
   uint8_t constrained_intensity = max(adjusted_intensity, 0);
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+  control_laser_intensity(constrained_intensity, 0);
+#else
   control_laser_intensity(constrained_intensity);
+#endif
   control_laser_pwm(constrained_intensity);
 
 }
@@ -477,7 +501,11 @@ static void homing_cycle(bool x_axis, bool y_axis, bool z_axis, bool reverse_dir
   uint8_t y_overshoot_count = 6;
 
   if (x_axis) { out_step_bits |= GPIO_BIT(STEP_X); }
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+  if (y_axis) { out_step_bits |= (GPIO_BIT(STEP_Y1) | GPIO_BIT(STEP_Y2)); }
+#else
   if (y_axis) { out_step_bits |= GPIO_BIT(STEP_Y); }
+#endif
 
   // Set direction pins
   if (reverse_direction) {
@@ -505,7 +533,12 @@ static void homing_cycle(bool x_axis, bool y_axis, bool z_axis, bool reverse_dir
     if (y_axis && (limit_bits & (1<<Y1_LIMIT_BIT))) {
       if(y_overshoot_count == 0) {
         y_axis = false;
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+        out_step_bits ^= GPIO_BIT(STEP_Y1);
+        out_step_bits ^= GPIO_BIT(STEP_Y2);
+#else
         out_step_bits ^= GPIO_BIT(STEP_Y);
+#endif
       } else {
         y_overshoot_count--;
       }

@@ -56,9 +56,9 @@ static int8_t CDC_Init_FS(void)
     rx_wr = 0;
     rx_rd = 0;
 
-	send_ready_flag = 0;
-	request_ready_flag = 0;
-	rx_buffer_open_slots = RX_FIFO_SIZE - 1;
+    send_ready_flag = 0;
+    request_ready_flag = 0;
+    rx_buffer_open_slots = RX_FIFO_SIZE - 1;
 
     bConnected = false;
     bFirstConnected = true;
@@ -76,42 +76,42 @@ static int8_t CDC_DeInit_FS(void)
 //-----------------------------------------------------------------------------
 static int8_t CDC_Control_FS  (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
-	switch (cmd) {
-	case CDC_SET_LINE_CODING:
-		LineCoding.bitrate = (uint32_t)(pbuf[0] | (pbuf[1] << 8) | (pbuf[2] << 16) | (pbuf[3] << 24));
-		LineCoding.format = pbuf[4];
-		LineCoding.paritytype = pbuf[5];
-		LineCoding.datatype = pbuf[6];
+    switch (cmd) {
+    case CDC_SET_LINE_CODING:
+        LineCoding.bitrate = (uint32_t)(pbuf[0] | (pbuf[1] << 8) | (pbuf[2] << 16) | (pbuf[3] << 24));
+        LineCoding.format = pbuf[4];
+        LineCoding.paritytype = pbuf[5];
+        LineCoding.datatype = pbuf[6];
 
-		bConnected = true;
-		break;
+        bConnected = true;
+        break;
 
-	case CDC_GET_LINE_CODING:
-		pbuf[0] = (uint8_t)(LineCoding.bitrate);
-		pbuf[1] = (uint8_t)(LineCoding.bitrate >> 8);
-		pbuf[2] = (uint8_t)(LineCoding.bitrate >> 16);
-		pbuf[3] = (uint8_t)(LineCoding.bitrate >> 24);
-		pbuf[4] = LineCoding.format;
-		pbuf[5] = LineCoding.paritytype;
-		pbuf[6] = LineCoding.datatype;
-		break;
+    case CDC_GET_LINE_CODING:
+        pbuf[0] = (uint8_t)(LineCoding.bitrate);
+        pbuf[1] = (uint8_t)(LineCoding.bitrate >> 8);
+        pbuf[2] = (uint8_t)(LineCoding.bitrate >> 16);
+        pbuf[3] = (uint8_t)(LineCoding.bitrate >> 24);
+        pbuf[4] = LineCoding.format;
+        pbuf[5] = LineCoding.paritytype;
+        pbuf[6] = LineCoding.datatype;
+        break;
 
-	case CDC_SET_CONTROL_LINE_STATE:
-		bConnected = false;
-		break;
+    case CDC_SET_CONTROL_LINE_STATE:
+        bConnected = false;
+        break;
 
-	case CDC_SEND_ENCAPSULATED_COMMAND:
-	case CDC_GET_ENCAPSULATED_RESPONSE:
-	case CDC_SET_COMM_FEATURE:
-	case CDC_GET_COMM_FEATURE:
-	case CDC_CLEAR_COMM_FEATURE:
-	case CDC_SEND_BREAK:
-		break;
-	default:
-		break;
-	}
+    case CDC_SEND_ENCAPSULATED_COMMAND:
+    case CDC_GET_ENCAPSULATED_RESPONSE:
+    case CDC_SET_COMM_FEATURE:
+    case CDC_GET_COMM_FEATURE:
+    case CDC_CLEAR_COMM_FEATURE:
+    case CDC_SEND_BREAK:
+        break;
+    default:
+        break;
+    }
 
-	return USBD_OK;
+    return USBD_OK;
 }
 //-----------------------------------------------------------------------------
 // read a character from the rx fifo ring buffer
@@ -123,8 +123,8 @@ uint8_t serial_read(void)
         rx_rd = (rx_rd == (RX_FIFO_SIZE - 1)) ? 0 : rx_rd + 1;
     }
     else {
-    	return SERIAL_NO_DATA;
-	}
+        return SERIAL_NO_DATA;
+    }
 
     __disable_irq();
 
@@ -151,6 +151,7 @@ int serial_rx_hook(uint8_t data)
     switch (data) {
         case CMD_FEED_HOLD: {
             stepper_request_stop(STATUS_SERIAL_STOP_REQUEST);
+            gcode_reset();
             break;
         }
         case CMD_CYCLE_START: {
@@ -158,13 +159,13 @@ int serial_rx_hook(uint8_t data)
             break;
         }
         case CHAR_REQUEST_READY: {
-		    if (rx_buffer_open_slots > RX_CHUNK_SIZE) {
-		      send_ready_flag = 1;
+            if (rx_buffer_open_slots > RX_CHUNK_SIZE) {
+              send_ready_flag = 1;
               cdc_timer_start();
-		    } else {
-		      // send ready when enough slots open up
-		      request_ready_flag = 1;
-		    }
+            } else {
+              // send ready when enough slots open up
+              request_ready_flag = 1;
+            }
             break;
         }
         default: {
@@ -230,12 +231,12 @@ void cdc_timer_isr(void)
     uint32_t n;
 
     if (((USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData)->TxState) {
-		if (ui_cdc_timer_count++ < CDC_TIMER_MAX) {
-	    	return;
-		}
-		else {
-			((USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData)->TxState = 0;
-		}
+        if (ui_cdc_timer_count++ < CDC_TIMER_MAX) {
+            return;
+        }
+        else {
+            ((USBD_CDC_HandleTypeDef*)hUsbDeviceFS.pClassData)->TxState = 0;
+        }
     }
     cdc_timer_stop();
     if (send_ready_flag) {    // request another chunk of data
@@ -260,7 +261,7 @@ void cdc_timer_isr(void)
         if (tx_rd == TX_FIFO_SIZE) {
             tx_rd = 0;
         }
-    	USBD_CDC_TransmitPacket(&hUsbDeviceFS);
+        USBD_CDC_TransmitPacket(&hUsbDeviceFS);
     }
 }
 //-----------------------------------------------------------------------------
@@ -273,18 +274,18 @@ void serial_reset_read_buffer(void)
 //-----------------------------------------------------------------------------
 void printString(const char *s)
 {
-	while (*s)
-	{
-		serial_write(*s++);
-	}
+    while (*s)
+    {
+        serial_write(*s++);
+    }
 }
 //-----------------------------------------------------------------------------
 void printPgmString(const char *s)
 {
-	while (*s)
-	{
-		serial_write(*s++);
-	}
+    while (*s)
+    {
+        serial_write(*s++);
+    }
 }
 //-----------------------------------------------------------------------------
 static void print_uint32_base10(unsigned long n)
@@ -356,20 +357,20 @@ void printFloat(float n)
 //-----------------------------------------------------------------------------
 void printFirstConnectedMsg()
 {
-	if (bConnected == false)
-	{
-		return;
-	}
-	bConnected = false;
-	if (bFirstConnected)
-	{
-		bFirstConnected = false;
-		return;
+    if (bConnected == false)
+    {
+        return;
+    }
+    bConnected = false;
+    if (bFirstConnected)
+    {
+        bFirstConnected = false;
+        return;
 
-	}
-	_delay_ms(20);
+    }
+    _delay_ms(20);
 
-	printPgmString(PSTR("# " GRBL_STR " " GRBL_VERSION));
-	printPgmString(PSTR("\n"));
+    printPgmString(PSTR("# " GRBL_STR " " GRBL_VERSION));
+    printPgmString(PSTR("\n"));
 }
 //-----------------------------------------------------------------------------

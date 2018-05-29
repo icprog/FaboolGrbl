@@ -15,16 +15,19 @@ Setup the hardware timers for:
 #include "stm32f2xx_hal.h"
 #include "timers.h"
 #include "stepper.h"
-#if GRBL_MODEL == FABOOL_LASER_DS
+#if GRBL_MODEL == FABOOL_LASER_DS || GRBL_MODEL == FABOOL_LASER_CO2_DS
 #include "gpio.h"
 #endif
 
 //-----------------------------------------------------------------------------
 uint32_t ui_cdc_timer_count;
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2_DS
 uint32_t ui_water_flow_threshold;
 uint32_t ui_water_flow_count;
 uint32_t ui_water_flow_save;
+#endif
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+uint8_t ui_intensity_bk;
 #endif
 //-----------------------------------------------------------------------------
 
@@ -194,6 +197,10 @@ static void laser_timer_init(void)
 {
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+    ui_intensity_bk = 0;
+#endif
+
     // enable the peripheral clock
     enable_tim_clock(TIMx);
 
@@ -232,12 +239,39 @@ static void laser_timer_init(void)
     TIMx->CR1 |= TIM_CR1_CEN;
 }
 
+#if GRBL_MODEL == FABOOL_LASER_CO2_DS
+void control_laser_intensity(uint8_t intensity, uint8_t uiSwitchJgFlg) {
+
+    TIM_TypeDef* const TIMx = LASER_TIMER;
+
+    if (switch_judge()) {
+        if (uiSwitchJgFlg) {
+            ui_intensity_bk = (uint8_t)TIMx->CCR3;
+        }
+        else {
+            ui_intensity_bk = intensity;
+        }
+        TIMx->CCR3 = 0;
+    }
+    else {
+        if (uiSwitchJgFlg) {
+            TIMx->CCR3 = ui_intensity_bk;
+        }
+        else {
+            TIMx->CCR3 = intensity;
+        }
+    }
+
+}
+#else
 void control_laser_intensity(uint8_t intensity) {
 
     TIM_TypeDef* const TIMx = LASER_TIMER;
 
     TIMx->CCR3 = intensity;
 }
+#endif
+
 void control_laser_pwm(uint8_t intensity) {
 
     TIM_TypeDef* const TIMx = LASER_TIMER;
@@ -334,7 +368,7 @@ void TIM4_IRQHandler(void)
     }
 }
 //-----------------------------------------------------------------------------
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2_DS
 
 #define WATER_FLOW_TIMER TIM5
 #define WATER_FLOW_TIMER_PERIOD 60000
@@ -434,7 +468,7 @@ void timers_init(void)
     step_timer_init();
     laser_timer_init();
     cdc_timer_init();
-#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2
+#if GRBL_MODEL == SMART_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2 || GRBL_MODEL == FABOOL_LASER_CO2_DS
     water_flow_timer_init();
 #endif
 }
