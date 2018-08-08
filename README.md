@@ -1,6 +1,6 @@
 # Fabool Laser Grbl
 
-## instll
+## Instll
 ### ローカルにcloneする方法
 * 「C:\ARM\pleiades\workspace」にFaboolGrblがダウンロードされていたらフォルダごと削除する
 * Gitを使用し、本リポジトリを「C:\ARM\pleiades\workspace」にcloneする
